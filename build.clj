@@ -3,8 +3,8 @@
   (:require [clojure.tools.build.api :as b]))
 
 (def lib 'com.hjsoft/project-templates)
-(def version "0.1.0-SNAPSHOT")
-#_ ; alternatively, use MAJOR.MINOR.COMMITS:
+#_(def version "0.1.0-SNAPSHOT")
+; alternatively, use MAJOR.MINOR.COMMITS:
 (def version (format "1.0.%s" (b/git-count-revs nil)))
 
 (defn test "Run all the tests." [opts]

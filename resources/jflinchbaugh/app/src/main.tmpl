@@ -1,0 +1,32 @@
+(ns {{top/ns}}.{{main/ns}}
+  (:require 
+            [clojure.string :as str]
+            [taoensso.telemere :as tel]
+            [tick.core :as t]
+            [clojure.java.io :as io]
+            [clojure.data.json :as json]
+            [clojure.data.xml :as xml]
+            [clj-yaml.core :as yaml]
+            [org.httpkit.client :as http]
+            [hiccup.form :as f]
+            [hiccup2.core :as h])
+  (:gen-class))
+
+
+(defn greet
+  "Callable entry point to the application."
+  [data]
+  (println (str "Hello, " (or (:name data) "World") "!")))
+
+(defn -main
+  "I don't do a whole lot ... yet."
+  [& args]
+  (greet {:name (first args)}))
+
+
+(comment
+  @(http/get "https://hjsoft.com/" {})
+  (json/read-str "{\"key\": \"value\"}")
+
+
+.)
