@@ -1,5 +1,5 @@
 (ns {{top/ns}}.{{main/ns}}
-  (:require 
+  (:require
             [clojure.string :as str]
             [taoensso.telemere :as tel]
             [tick.core :as t]
@@ -12,7 +12,6 @@
             [hiccup2.core :as h])
   (:gen-class))
 
-
 (defn greet
   "Callable entry point to the application."
   [data]
@@ -23,10 +22,13 @@
   [& args]
   (greet {:name (first args)}))
 
-
 (comment
   @(http/get "https://hjsoft.com/" {})
-  (json/read-str "{\"key\": \"value\"}")
 
+  @(http/post "https://hjsoft.com/" {:body ""})
+
+  (json/read-str "{\"key\": \"value\"}" {:key-fn keyword})
+
+  (str (h/html [:tag]))
 
 .)
