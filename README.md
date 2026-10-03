@@ -9,4 +9,7 @@ My collection of project templates for use with:
 This is a template project for use with [deps-new](https://github.com/seancorfield/deps-new).
 As originally generated, it will produce a new library project when run:
 
-    $ clojure -Sdeps '{:deps {com.hjsoft/project-templates {:local/root "."}}}' -Tnew create :template jflinchbaugh/app :name myusername/mycoolapp
+$ clojure -Sdeps '{:deps {com.hjsoft/project-templates {:local/root "."}}}' -Tnew create :template jflinchbaugh/app :name myusername/mycoolapp
+
+Or with the repo alredy added to th ealias:
+$ clojure -T:project/create :template jflinchbaugh/app :name myusername/mycoolapp
