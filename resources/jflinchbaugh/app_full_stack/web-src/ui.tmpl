@@ -1,0 +1,56 @@
+(ns {{top/ns}}.{{main/ns}}.ui
+  (:require [cljs-http.client :as http]
+            [cljs.core.async :refer [<! go]]
+            [helix.core :refer [$ defnc]]
+            [helix.dom :as d]
+            [helix.hooks :as hooks]
+            [{{top/ns}}.{{main/ns}}.core :as core]
+            [{{top/ns}}.{{main/ns}}.version :as version]))
+
+(defnc app-root
+  "Root application component."
+  []
+  (let [[status set-status] (hooks/use-state :idle)
+        [message set-message] (hooks/use-state "Not checked")
+        check-server
+        (fn []
+          (set-status :loading)
+          (set-message "Checking...")
+          (go
+            (let [resp (<! (http/get "/api/ping"))]
+              (if (:success resp)
+                (do
+                  (set-status :ok)
+                  (set-message (str "Server OK: " (:body resp))))
+                (do
+                  (set-status :error)
+                  (set-message
+                   (str "Server error: " (:status resp))))))))
+        badge-class (case status
+                      :ok "status-badge status-ok"
+                      :error "status-badge status-error"
+                      "status-badge")]
+    (d/div
+     {:class "app-container"}
+     (d/header
+      {:class "app-header"}
+      (d/div
+       {:class "app-brand"}
+       (d/img {:class "app-logo"
+               :src "icon.svg"
+               :alt "{{raw-name}}"})
+       (d/h1 {:class "app-title"} "{{raw-name}}")))
+     (d/main
+      (d/section
+       {:class "card"}
+       (d/h2 {:class "card-title"} (core/format-greeting nil))
+       (d/div
+        {:class "card-body"}
+        (d/button {:class "btn btn-primary"
+                   :type "button"
+                   :on-click check-server}
+                  "Check Server")
+        (d/span {:class badge-class} message))))
+     (d/footer
+      {:class "build-info"}
+      (str "Build: " version/build-date)))))

@@ -1,0 +1,41 @@
+(ns {{top/ns}}.{{main/ns}}.build-hooks
+  (:require [clojure.java.io :as io]
+            [clojure.string :as str]))
+
+(defn version-index-resources
+  "Inject build timestamp into index.html and sw.js for cache busting."
+  {:shadow.build/stage :flush}
+  [state]
+  (let [ts (str (System/currentTimeMillis))
+        index-src (slurp "src/html/index.html")
+        sw-src (slurp "src/html/sw.js")]
+    (io/make-parents "public/index.html")
+    (spit "public/index.html" (str/replace index-src "{ts}" ts))
+    (io/make-parents "public/sw.js")
+    (spit "public/sw.js" (str/replace sw-src "{ts}" ts)))
+  state)
+
+(defn version-cljs
+  "Generate version.cljs with the current build timestamp."
+  {:shadow.build/stage :configure}
+  [state]
+  (let [ts (str (java.time.Instant/now))
+        content (str "(ns {{top/ns}}.{{main/ns}}.version)\n\n"
+                     "(def build-date \"" ts "\")\n")
+        out-path (str "src/main/{{top/file}}/{{main/file}}/"
+                      "version.cljs")]
+    (io/make-parents out-path)
+    (spit out-path content))
+  state)
+
+(defn proxy-api?
+  "Predicate for shadow-cljs :dev-http :proxy-predicate."
+  [request _config]
+  (let [path (or (when (instance? shadow.http.server.HttpRequest
+                                  request)
+                   (.getRequestPath
+                    ^shadow.http.server.HttpRequest request))
+                 (:uri request)
+                 "")]
+    (or (= path "/api")
+        (str/starts-with? path "/api/"))))

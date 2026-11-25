@@ -1,0 +1,43 @@
+(ns {{top/ns}}.{{main/ns}}.db-test
+  (:require [{{test-runner/namespace}} :as t]
+            [{{top/ns}}.{{main/ns}}.db :as db]))
+
+(defn- reset-db-fixture
+  [f]
+  (db/delete-db! ":memory")
+  (db/connect! ":memory")
+  (try
+    (f)
+    (finally
+      (db/delete-db! ":memory"))))
+
+(t/use-fixtures :each reset-db-fixture)
+
+(t/{{test-runner/deftest}} user-and-items-test
+  (t/{{test-runner/testing}} "User registration and item CRUD"
+    (t/{{test-runner/is}} (not (db/user-exists? "alice")))
+    (t/{{test-runner/is}} (db/register-user! "alice" "secret"))
+    (t/{{test-runner/is}} (db/user-exists? "alice"))
+    (t/{{test-runner/is}} (some? (db/get-user-password "alice")))
+    (let [item (db/put-item! "alice" {:id "i-1" :title "First task"})]
+      (t/{{test-runner/is}} (= "i-1" (:id item)))
+      (t/{{test-runner/is}} (= 1 (count (db/list-items "alice"))))
+      (t/{{test-runner/is}} (= {:users 1 :items 1} (db/storage-summary)))
+      (t/{{test-runner/is}} (not (db/delete-item! "bob" "i-1")))
+      (t/{{test-runner/is}} (db/delete-item! "alice" "i-1"))
+      (t/{{test-runner/is}} (empty? (db/list-items "alice"))))))
+
+(t/{{test-runner/deftest}} dump-and-load-roundtrip-test
+  (t/{{test-runner/testing}} "Dump and load EDN preserves users and items"
+    (db/register-user! "bob" "pass123")
+    (db/put-item! "bob" {:id "i-2" :title "Saved item"})
+    (let [dumped (with-out-str (db/dump-db!))]
+      (db/delete-db! ":memory")
+      (db/connect! ":memory")
+      (t/{{test-runner/is}} (not (db/user-exists? "bob")))
+      (db/load-db! dumped)
+      (t/{{test-runner/is}} (db/user-exists? "bob"))
+      (t/{{test-runner/is}} (= "Saved item"
+                               (-> (db/list-items "bob")
+                                   first
+                                   :title))))))

@@ -19,6 +19,11 @@ For a web server application (`jflinchbaugh/app-web-server`):
 $ clojure -Sdeps '{:deps {com.hjsoft/project-templates {:local/root "."}}}' -Tnew create :template jflinchbaugh/app-web-server :name myusername/mywebserver
 $ clojure -T:project/create :template jflinchbaugh/app-web-server :name myusername/mywebserver
 
+For a full-stack web + server application (`jflinchbaugh/app-full-stack`):
+
+$ clojure -Sdeps '{:deps {com.hjsoft/project-templates {:local/root "."}}}' -Tnew create :template jflinchbaugh/app-full-stack :name myusername/myfullstackapp
+$ clojure -T:project/create :template jflinchbaugh/app-full-stack :name myusername/myfullstackapp
+
 ## Testing
 
 ### Template spec and generation tests
@@ -32,19 +37,21 @@ $ clojure -T:build test
 Run the test script to execute the repo test suite, generate projects from the local templates in a temporary directory, and verify their entry points, tests, and HTTP endpoints:
 
 $ ./scripts/test-templates.sh
-$ ./scripts/test-templates.sh app-web-server
 $ ./scripts/test-templates.sh app
+$ ./scripts/test-templates.sh app-web-server
+$ ./scripts/test-templates.sh app-full-stack
 
 Useful flags:
-- `--ci`: also run `clojure -T:build ci` (builds the uberjar) on `app-web-server`
+- `--ci`: also run release/uberjar builds (`clojure -T:build ci` on `app-web-server`, `make build` on `app-full-stack`)
 - `--outdated`: also run `clojure -T:search/outdated` in each generated project
 - `--keep`: keep the temporary generated directory for inspection
 
 Examples:
 
 $ ./scripts/test-templates.sh --ci app-web-server
-$ ./scripts/test-templates.sh --keep app-web-server
-$ ./scripts/test-templates.sh --outdated app-web-server
+$ ./scripts/test-templates.sh --ci app-full-stack
+$ ./scripts/test-templates.sh --keep app-full-stack
+$ ./scripts/test-templates.sh --outdated app-full-stack
 
 ### Manual testing
 

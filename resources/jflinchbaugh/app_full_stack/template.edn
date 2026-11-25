@@ -1,0 +1,23 @@
+{:description "FIXME: my new full-stack application."
+ :data-fn     [org.corfield.new.transformers/choose-test-runner]
+ :transform
+ [["server" "server"
+   {"build.tmpl"    "build.clj"
+    "deps.tmpl"     "deps.edn"
+    "pod.yaml.tmpl" "{{artifact/id}}-server.yaml"
+    "pod.kube.tmpl" "{{artifact/id}}-server.kube"}]
+  ["server-src" "server/src/{{top/file}}/{{main/file}}"
+   {"db.tmpl"     "db.clj"
+    "server.tmpl" "server.clj"}]
+  ["server-test" "server/test/{{top/file}}/{{main/file}}"
+   {"db_test.tmpl"     "db_test.clj"
+    "server_test.tmpl" "server_test.clj"}]
+  ["web" "web"]
+  ["web-src" "web/src/main/{{top/file}}/{{main/file}}"
+   {"app.tmpl"         "app.cljs"
+    "build_hooks.tmpl" "build_hooks.clj"
+    "core.tmpl"        "core.cljs"
+    "ui.tmpl"          "ui.cljs"}]
+  ["web-test" "web/src/test/{{top/file}}/{{main/file}}"
+   {"core_test.tmpl" "core_test.cljs"
+    "ui_test.tmpl"   "ui_test.cljs"}]]}

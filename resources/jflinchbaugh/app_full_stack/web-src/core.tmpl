@@ -1,0 +1,20 @@
+(ns {{top/ns}}.{{main/ns}}.core
+  (:require [clojure.string :as str]))
+
+(defn resolve-base-path
+  "Normalize a window.location pathname to a trailing-slash base path."
+  [pathname]
+  (if (str/blank? pathname)
+    "/"
+    (if (str/ends-with? pathname "/")
+      pathname
+      (let [idx (str/last-index-of pathname "/")]
+        (if idx
+          (subs pathname 0 (inc idx))
+          "/")))))
+
+(defn format-greeting
+  "Return a greeting string for the given name."
+  [who]
+  (let [target (if (str/blank? who) "World" (str/trim who))]
+    (str "Hello, " target "!")))

@@ -13,11 +13,52 @@
   [{:template 'jflinchbaugh/app
     :resource "jflinchbaugh/app/template.edn"
     :name 'acme/demo-app
-    :main "demo_app"}
+    :dir "demo_app"
+    :expected-files ["deps.edn"
+                     "build.clj"
+                     "README.md"
+                     "src/acme/demo_app.clj"
+                     "test/acme/demo_app_test.clj"]}
    {:template 'jflinchbaugh/app-web-server
     :resource "jflinchbaugh/app_web_server/template.edn"
     :name 'acme/demo-web
-    :main "demo_web"}])
+    :dir "demo_web"
+    :expected-files ["deps.edn"
+                     "build.clj"
+                     "README.md"
+                     "src/acme/demo_web.clj"
+                     "test/acme/demo_web_test.clj"]}
+   {:template 'jflinchbaugh/app-full-stack
+    :resource "jflinchbaugh/app_full_stack/template.edn"
+    :name 'acme/demo-fullstack
+    :dir "demo_fullstack"
+    :expected-files ["Makefile"
+                     "README.md"
+                     "server/deps.edn"
+                     "server/build.clj"
+                     "server/Makefile"
+                     "server/Containerfile"
+                     "server/entrypoint.sh"
+                     "server/demo-fullstack-server.yaml"
+                     "server/demo-fullstack-server.kube"
+                     "server/src/acme/demo_fullstack/db.clj"
+                     "server/src/acme/demo_fullstack/server.clj"
+                     "server/test/acme/demo_fullstack/db_test.clj"
+                     "server/test/acme/demo_fullstack/server_test.clj"
+                     "web/package.json"
+                     "web/shadow-cljs.edn"
+                     "web/Makefile"
+                     "web/public/style.css"
+                     "web/public/manifest.json"
+                     "web/src/html/index.html"
+                     "web/src/html/sw.js"
+                     "web/src/main/acme/demo_fullstack/app.cljs"
+                     "web/src/main/acme/demo_fullstack/build_hooks.clj"
+                     "web/src/main/acme/demo_fullstack/core.cljs"
+                     "web/src/main/acme/demo_fullstack/ui.cljs"
+                     "web/src/test/node.cljs"
+                     "web/src/test/acme/demo_fullstack/core_test.cljs"
+                     "web/src/test/acme/demo_fullstack/ui_test.cljs"]}])
 
 (defn- delete-recursively
   "Delete a directory tree rooted at f."
@@ -37,27 +78,22 @@
              (s/explain-str :org.corfield.new/template tmpl))))))))
 
 (deftest create-templates-test
-  (doseq [{:keys [template name main]} templates]
+  (doseq [{:keys [template name dir expected-files]} templates]
     (testing (str "Creating project from " template)
       (let [tmp (.toFile
                  (Files/createTempDirectory
                   "project-templates-test"
                   (into-array FileAttribute [])))
-            target (str (.getAbsolutePath tmp) "/" main)]
+            target (str (.getAbsolutePath tmp) "/" dir)]
         (try
           (new/create {:template template
                        :name name
                        :target-dir target})
-          (let [expected ["deps.edn"
-                          "build.clj"
-                          "README.md"
-                          (str "src/acme/" main ".clj")
-                          (str "test/acme/" main "_test.clj")]]
-            (doseq [rel expected]
-              (let [f (io/file target rel)]
-                (is (.exists f) (str "Missing generated file: " rel))
-                (when (.exists f)
-                  (is (not (str/includes? (slurp f) "{{"))
-                      (str "Unreplaced placeholder in " rel))))))
+          (doseq [rel expected-files]
+            (let [f (io/file target rel)]
+              (is (.exists f) (str "Missing generated file: " rel))
+              (when (.exists f)
+                (is (not (str/includes? (slurp f) "{{"))
+                    (str "Unreplaced placeholder in " rel)))))
           (finally
             (delete-recursively tmp)))))))

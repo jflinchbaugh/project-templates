@@ -1,0 +1,50 @@
+(ns build
+  (:refer-clojure :exclude [clean test])
+  (:require [clojure.tools.build.api :as b]))
+
+(def lib '{{group/id}}/{{artifact/id}}-server)
+(def version "{{version}}")
+(def main '{{top/ns}}.{{main/ns}}.server)
+(def class-dir "target/classes")
+(def uber-file "target/{{artifact/id}}-server-standalone.jar")
+
+(defn test "Run all the tests." [opts]
+  (let [basis (b/create-basis {:aliases [:test]})
+        cmds (b/java-command
+              {:basis basis
+               :main 'clojure.main
+               :main-args (into ["-m" "{{test-runner/main}}"]
+                            (mapcat (fn [[k v]] [(str k) (str v)]) opts))})
+        {:keys [exit]} (b/process cmds)]
+    (when-not (zero? exit) (throw (ex-info "Tests failed" {}))))
+  opts)
+
+(defn clean "Delete build artifacts." [opts]
+  (b/delete {:path "target"})
+  opts)
+
+(defn- uber-opts [opts]
+  (assoc opts
+         :lib lib
+         :main main
+         :uber-file uber-file
+         :basis (b/create-basis {})
+         :class-dir class-dir
+         :src-dirs ["src"]
+         :ns-compile [main]))
+
+(defn uber "Build the standalone uberjar." [opts]
+  (clean opts)
+  (let [opts (uber-opts opts)]
+    (println "\nCopying source...")
+    (b/copy-dir {:src-dirs ["src"] :target-dir class-dir})
+    (println (str "\nCompiling " main "..."))
+    (b/compile-clj opts)
+    (println "\nBuilding JAR..." (:uber-file opts))
+    (b/uber opts))
+  opts)
+
+(defn ci "Run the CI pipeline of tests (and build the uberjar)." [opts]
+  (test opts)
+  (uber opts)
+  opts)

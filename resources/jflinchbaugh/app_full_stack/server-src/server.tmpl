@@ -1,0 +1,227 @@
+(ns {{top/ns}}.{{main/ns}}.server
+  (:gen-class)
+  (:require [buddy.auth.backends :as backends]
+            [buddy.auth.middleware :as buddy]
+            [buddy.hashers :as hashers]
+            [clojure.data.json :as json]
+            [clojure.string :as str]
+            [org.httpkit.server :as hks]
+            [reitit.ring :as ring]
+            [ring.middleware.cors :as rmc]
+            [ring.middleware.defaults :as rmd]
+            [ring.util.request :as rur]
+            [taoensso.telemere :as tel]
+            [{{top/ns}}.{{main/ns}}.db :as db]))
+
+(tel/add-handler!
+ :default/console
+ (tel/handler:console {:stream :err}))
+
+(def ^:const realm "{{artifact/id}}")
+
+(defonce server (atom nil))
+
+(defn api-response
+  "Build a plain Ring response map."
+  ([code body]
+   (api-response code body "text/plain; charset=utf-8"))
+  ([code body content-type]
+   {:status code
+    :headers {"Content-Type" content-type}
+    :body body}))
+
+(defn json-response
+  "Build a JSON Ring response map."
+  [code data]
+  (api-response
+   code
+   (json/write-str data)
+   "application/json; charset=utf-8"))
+
+(defn not-found
+  "Return a 404 Not Found response."
+  [& _]
+  (api-response 404 "Not Found"))
+
+(defn unauthorized
+  "Return a 401 Unauthorized response with Basic challenge."
+  [& _]
+  {:status 401
+   :headers {"Content-Type" "text/plain; charset=utf-8"
+             "WWW-Authenticate" (format "Basic realm=%s" realm)}
+   :body "Unauthorized"})
+
+(defn ping-handler
+  "Health ping endpoint returning plain text pong."
+  [_req]
+  (api-response 200 "pong"))
+
+(defn health-handler
+  "Health endpoint returning JSON status."
+  [_req]
+  (json-response 200 {:status "ok"}))
+
+(defn parse-json-body
+  "Parse a JSON request body into keyword-keyed data, or nil."
+  [req]
+  (try
+    (let [s (rur/body-string req)]
+      (when-not (str/blank? s)
+        (json/read-str s :key-fn keyword)))
+    (catch Exception _ nil)))
+
+(defn register-handler
+  "Register a new user account."
+  [req]
+  (let [body (or (parse-json-body req) (:params req))
+        username (some-> (:username body) str str/trim)
+        password (:password body)]
+    (cond
+      (or (str/blank? username) (str/blank? password))
+      (json-response
+       400
+       {:error "username and password are required"})
+
+      (db/user-exists? username)
+      (json-response 409 {:error "username already exists"})
+
+      :else
+      (do
+        (db/register-user! username password)
+        (json-response 201 {:username username})))))
+
+(defn list-items-handler
+  "List items owned by the authenticated user."
+  [req]
+  (let [items (db/list-items (:identity req))]
+    (json-response 200 {:items items})))
+
+(defn create-item-handler
+  "Create an item for the authenticated user."
+  [req]
+  (let [body (parse-json-body req)
+        title (some-> (:title body) str str/trim)
+        id (:id body)]
+    (if (str/blank? title)
+      (json-response 400 {:error "title is required"})
+      (let [item (db/put-item! (:identity req)
+                               {:id id :title title})]
+        (json-response 201 item)))))
+
+(defn delete-item-handler
+  "Delete an item owned by the authenticated user."
+  [req]
+  (let [id (get-in req [:path-params :id])]
+    (if (db/delete-item! (:identity req) id)
+      (json-response 200 {:deleted id})
+      (not-found))))
+
+(defn identity-required-wrapper
+  "Reject requests that lack an authenticated :identity."
+  [handler]
+  (fn [req]
+    (if-not (:identity req)
+      (unauthorized)
+      (handler req))))
+
+(defn authfn
+  "Verify Basic auth credentials against Datahike."
+  [_req authdata]
+  (let [username (:username authdata)
+        password (:password authdata)]
+    (when-let [stored-pw (db/get-user-password username)]
+      (when (:valid (hashers/verify password stored-pw))
+        username))))
+
+(def backend
+  (backends/basic {:realm realm :authfn authfn}))
+
+(defn authenticated-user
+  "Middleware applying HTTP Basic authentication."
+  [handler]
+  (buddy/wrap-authentication handler backend))
+
+(def app
+  (-> ["/api"
+       ["/ping" {:get ping-handler}]
+       ["/health" {:get health-handler}]
+       ["/register" {:post register-handler}]
+       ["/items"
+        {:middleware [authenticated-user identity-required-wrapper]
+         :get list-items-handler
+         :post create-item-handler}]
+       ["/items/:id"
+        {:middleware [authenticated-user identity-required-wrapper]
+         :delete delete-item-handler}]]
+      (ring/router)
+      (ring/ring-handler not-found)
+      (rmc/wrap-cors
+       :access-control-allow-origin [#".*"]
+       :access-control-allow-methods [:get :put :post :delete])
+      (rmd/wrap-defaults
+       (assoc rmd/api-defaults :proxy true))))
+
+(defn stop-server!
+  "Stop the HTTP server and disconnect from Datahike."
+  []
+  (db/disconnect!)
+  (when-let [s @server]
+    (s :timeout 100)
+    (reset! server nil)
+    (tel/log! :info "Server stopped")))
+
+(defn start-server!
+  "Connect to Datahike and start the HTTP server."
+  ([port]
+   (start-server! port nil))
+  ([port db-path]
+   (when (nil? @server)
+     (let [target (cond
+                    (not (str/blank? db-path)) db-path
+                    (not (str/blank?
+                          (System/getenv "DATAHIKE_PATH")))
+                    (System/getenv "DATAHIKE_PATH")
+                    :else ":memory")]
+       (db/connect! target)
+       (reset! server (hks/run-server #'app {:port port}))
+       (let [summary (db/storage-summary)]
+         (tel/log! :info
+                   (format "Server started on port %d (%s)"
+                           port target))
+         (tel/log! :info
+                   (format "Storage: %d users, %d items"
+                           (:users summary)
+                           (:items summary))))))))
+
+(defn -main
+  "Application entry point supporting dump, load, or HTTP server."
+  [& [cmd-or-port arg1]]
+  (case cmd-or-port
+    "dump"
+    (let [target (or arg1
+                     (System/getenv "DATAHIKE_PATH")
+                     "/var/lib/datahike/{{artifact/id}}.sqlite")]
+      (db/connect! target)
+      (db/dump-db!)
+      (db/disconnect!)
+      (System/exit 0))
+
+    "load"
+    (let [target (or arg1
+                     (System/getenv "DATAHIKE_PATH")
+                     "/var/lib/datahike/{{artifact/id}}.sqlite")]
+      (db/connect! target)
+      (db/load-db! *in*)
+      (db/disconnect!)
+      (System/exit 0))
+
+    (let [p (or (some-> cmd-or-port parse-long)
+                (some-> (System/getenv "PORT") parse-long)
+                6000)]
+      (start-server! p arg1))))
+
+(comment
+  (start-server! 6000 ":memory")
+
+  (stop-server!)
+  )

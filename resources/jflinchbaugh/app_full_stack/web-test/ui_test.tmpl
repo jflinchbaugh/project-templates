@@ -1,0 +1,31 @@
+(ns {{top/ns}}.{{main/ns}}.ui-test
+  (:require [cljs.test :refer [deftest is testing]]
+            [helix.core :refer [$]]
+            ["jsdom" :refer [JSDOM]]
+            [{{top/ns}}.{{main/ns}}.ui :as ui]))
+
+(defonce ^:private _init-jsdom
+  (let [dom (JSDOM. "<!DOCTYPE html><html><body></body></html>"
+                    #js {:url "http://localhost/"})]
+    (js/goog.object.set js/goog.global "window" (.-window dom))
+    (js/goog.object.set js/goog.global "document"
+                        (.. dom -window -document))
+    (js/Object.defineProperty
+     js/goog.global "navigator"
+     #js {:value (.. dom -window -navigator)
+          :configurable true
+          :writable true})))
+
+(deftest app-root-render-test
+  (testing "renders app title and Check Server button"
+    (let [rtl (js/require "@testing-library/react")
+          render (.-render rtl)
+          screen (.-screen rtl)
+          view (render ($ ui/app-root))]
+      (try
+        (is (some? (.getByText screen "{{raw-name}}")))
+        (is (some? (.getByRole screen "button"
+                               #js {:name "Check Server"})))
+        (is (some? (.getByText screen "Not checked")))
+        (finally
+          ((js/goog.object.get view "unmount")))))))

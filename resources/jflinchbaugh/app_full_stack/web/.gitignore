@@ -1,0 +1,7 @@
+node_modules/
+.shadow-cljs/
+out/
+public/js/
+public/index.html
+public/sw.js
+src/main/{{top/file}}/{{main/file}}/version.cljs

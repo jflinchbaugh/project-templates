@@ -1,0 +1,22 @@
+.PHONY: all install dev dev-test test release clean
+
+all: release
+
+install:
+	npm install
+
+dev: install
+	npx shadow-cljs watch frontend
+
+dev-test: install
+	npx shadow-cljs watch frontend test
+
+test: install
+	npx shadow-cljs compile test
+
+release: install
+	npx shadow-cljs release frontend
+
+clean:
+	rm -rf out .shadow-cljs public/js public/index.html \
+		public/sw.js src/main/{{top/file}}/{{main/file}}/version.cljs

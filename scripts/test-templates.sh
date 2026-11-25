@@ -18,10 +18,11 @@ Test project templates in this repository end-to-end.
 Templates:
   app              Test jflinchbaugh/app
   app-web-server   Test jflinchbaugh/app-web-server
+  app-full-stack   Test jflinchbaugh/app-full-stack
   (defaults to running all templates when omitted)
 
 Options:
-  --ci             Run clojure -T:build ci (uberjar) on app-web-server
+  --ci             Run CI / release builds (uberjar, frontend release)
   --outdated       Run clojure -T:search/outdated in each generated project
   --keep           Keep the temporary directory after finishing
   -h, --help       Show this help message and exit
@@ -51,7 +52,7 @@ while [[ $# -gt 0 ]]; do
       usage >&2
       exit 1
       ;;
-    app|app-web-server)
+    app|app-web-server|app-full-stack)
       TEMPLATES+=("$1")
       shift
       ;;
@@ -64,7 +65,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 if [[ ${#TEMPLATES[@]} -eq 0 ]]; then
-  TEMPLATES=("app" "app-web-server")
+  TEMPLATES=("app" "app-web-server" "app-full-stack")
 fi
 
 WORK_DIR="$(mktemp -d)"
@@ -187,6 +188,89 @@ test_app_web_server() {
   )
 }
 
+test_app_full_stack() {
+  local dir="$WORK_DIR/demo-fullstack"
+  local port="${TEST_PORT:-18089}"
+  echo "=== Testing jflinchbaugh/app-full-stack ==="
+  create_project "jflinchbaugh/app-full-stack" "acme/demo-fullstack" "$dir"
+
+  (
+    cd "$dir/server"
+    echo "--- Running server tests (clojure -T:build test) ---"
+    clojure -T:build test
+
+    echo "--- Running server live HTTP smoke test on port $port ---"
+    clojure -M -e "
+      (require '[acme.demo-fullstack.server :as srv]
+               '[clojure.data.json :as json]
+               '[clojure.string :as str]
+               '[org.httpkit.client :as http])
+      (srv/start-server! $port \":memory\")
+      (try
+        (let [ping @(http/get \"http://localhost:$port/api/ping\")
+              health @(http/get \"http://localhost:$port/api/health\")
+              reg @(http/post \"http://localhost:$port/api/register\"
+                              {:headers {\"Content-Type\" \"application/json\"}
+                               :body (json/write-str {:username \"alice\"
+                                                      :password \"secret\"})})
+              auth [\"alice\" \"secret\"]
+              created @(http/post \"http://localhost:$port/api/items\"
+                                  {:basic-auth auth
+                                   :headers {\"Content-Type\" \"application/json\"}
+                                   :body (json/write-str {:title \"Smoke item\"})})
+              items @(http/get \"http://localhost:$port/api/items\"
+                               {:basic-auth auth})]
+          (assert (= 200 (:status ping)))
+          (assert (= \"pong\" (:body ping)))
+          (assert (= 200 (:status health)))
+          (assert (= \"{\\\"status\\\":\\\"ok\\\"}\" (:body health)))
+          (assert (= 201 (:status reg)))
+          (assert (= 201 (:status created)))
+          (assert (= 200 (:status items)))
+          (assert (str/includes? (:body items) \"Smoke item\"))
+          (println \"Server HTTP smoke test OK:\" (:status health) (:body health)))
+        (finally
+          (srv/stop-server!)))
+      (System/exit 0)"
+
+    run_outdated_if_enabled
+  )
+
+  (
+    cd "$dir/web"
+    echo "--- Installing npm dependencies and running web tests ---"
+    npm install
+    npx shadow-cljs compile test
+  )
+
+  if [[ "$RUN_CI" == true ]]; then
+    (
+      cd "$dir"
+      echo "--- Running full-stack release build (make build) ---"
+      make build
+      if [[ ! -f "server/target/demo-fullstack-server-standalone.jar" ]]; then
+        echo "ERROR: expected server/target/demo-fullstack-server-standalone.jar" >&2
+        exit 1
+      fi
+      for f in web/public/js/main.js web/public/index.html web/public/sw.js; do
+        if [[ ! -f "$f" ]]; then
+          echo "ERROR: expected $f" >&2
+          exit 1
+        fi
+      done
+      if grep -q '{ts}' web/public/index.html || grep -q '{ts}' web/public/sw.js; then
+        echo "ERROR: unreplaced {ts} cache-busting token found" >&2
+        exit 1
+      fi
+      if ! grep -q '?ts=' web/public/index.html; then
+        echo "ERROR: expected ?ts= cache-busting param in web/public/index.html" >&2
+        exit 1
+      fi
+      echo "Full-stack CI build verified."
+    )
+  fi
+}
+
 echo "=== Running project-templates test suite ==="
 (
   cd "$REPO_ROOT"
@@ -200,6 +284,9 @@ for tmpl in "${TEMPLATES[@]}"; do
       ;;
     app-web-server)
       test_app_web_server
+      ;;
+    app-full-stack)
+      test_app_full_stack
       ;;
   esac
 done

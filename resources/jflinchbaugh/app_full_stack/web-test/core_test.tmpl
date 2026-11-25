@@ -1,0 +1,17 @@
+(ns {{top/ns}}.{{main/ns}}.core-test
+  (:require [cljs.test :refer [deftest is testing]]
+            [{{top/ns}}.{{main/ns}}.core :as core]))
+
+(deftest resolve-base-path-test
+  (testing "normalizes pathnames to trailing-slash base paths"
+    (is (= "/" (core/resolve-base-path nil)))
+    (is (= "/" (core/resolve-base-path "")))
+    (is (= "/" (core/resolve-base-path "/index.html")))
+    (is (= "/app/" (core/resolve-base-path "/app/")))
+    (is (= "/app/" (core/resolve-base-path "/app/index.html")))))
+
+(deftest format-greeting-test
+  (testing "formats default and named greetings"
+    (is (= "Hello, World!" (core/format-greeting nil)))
+    (is (= "Hello, World!" (core/format-greeting "  ")))
+    (is (= "Hello, Clojure!" (core/format-greeting " Clojure ")))))

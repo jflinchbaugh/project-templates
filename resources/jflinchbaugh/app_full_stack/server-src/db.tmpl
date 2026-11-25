@@ -1,0 +1,237 @@
+(ns {{top/ns}}.{{main/ns}}.db
+  (:require [buddy.hashers :as hashers]
+            [clojure.edn :as edn]
+            [clojure.java.io :as io]
+            [clojure.string :as str]
+            [datahike.api :as d]
+            [konserve-jdbc.core]
+            [taoensso.telemere :as tel]
+            [tick.core :as t]))
+
+(def ^:const datahike-store-id
+  #uuid "550e8400-e29b-41d4-a716-446655440001")
+
+(defonce conn (atom nil))
+
+(defn datahike-config
+  "Build a Datahike config for :memory or a SQLite file path."
+  [path]
+  (if (= path ":memory")
+    {:store {:backend :memory
+             :id datahike-store-id}
+     :schema-flexibility :read
+     :value-caps :default
+     :keep-history? false}
+    {:store {:backend :jdbc
+             :dbtype "sqlite"
+             :dbname (if (str/blank? path)
+                       "/var/lib/datahike/{{artifact/id}}.sqlite"
+                       path)
+             :id datahike-store-id}
+     :schema-flexibility :read
+     :value-caps :default
+     :keep-history? false}))
+
+(defn init-schema!
+  "Ensure base Datahike schema attributes exist."
+  [connection]
+  (d/transact connection
+              [{:db/ident :user/username
+                :db/valueType :db.type/string
+                :db/cardinality :db.cardinality/one
+                :db/unique :db.unique/identity}
+               {:db/ident :user/password
+                :db/valueType :db.type/string
+                :db/cardinality :db.cardinality/one}
+               {:db/ident :item/id
+                :db/valueType :db.type/string
+                :db/cardinality :db.cardinality/one
+                :db/unique :db.unique/identity}
+               {:db/ident :item/owner
+                :db/valueType :db.type/string
+                :db/cardinality :db.cardinality/one}
+               {:db/ident :item/title
+                :db/valueType :db.type/string
+                :db/cardinality :db.cardinality/one}
+               {:db/ident :item/created-at
+                :db/valueType :db.type/string
+                :db/cardinality :db.cardinality/one}]))
+
+(defn disconnect!
+  "Release any active Datahike connection."
+  []
+  (when-let [c @conn]
+    (try
+      (d/release c)
+      (catch Exception _ nil))
+    (reset! conn nil)))
+
+(defn delete-db!
+  "Disconnect and delete the Datahike database at path."
+  [path]
+  (disconnect!)
+  (let [cfg (datahike-config path)]
+    (when (d/database-exists? cfg)
+      (d/delete-database cfg))))
+
+(defn connect!
+  "Connect to Datahike at path (default SQLite, or \":memory\")."
+  ([]
+   (connect! nil))
+  ([path]
+   (disconnect!)
+   (let [cfg (datahike-config path)]
+     (when-not (d/database-exists? cfg)
+       (d/create-database cfg))
+     (let [c (d/connect cfg)]
+       (reset! conn c)
+       (init-schema! c)
+       c))))
+
+(defn user-exists?
+  "Return true when username is already registered."
+  [username]
+  (when-let [c @conn]
+    (boolean (d/q '[:find ?e .
+                    :in $ ?u
+                    :where [?e :user/username ?u]]
+                  @c username))))
+
+(defn register-user!
+  "Register a user with a hashed password."
+  [username password]
+  (when-let [c @conn]
+    (d/transact c [{:user/username username
+                    :user/password (hashers/derive password)}])
+    (tel/log! :info (format "Registered user '%s'" username))
+    true))
+
+(defn get-user-password
+  "Return the hashed password for username, or nil."
+  [username]
+  (when-let [c @conn]
+    (d/q '[:find ?pw .
+           :in $ ?u
+           :where [?e :user/username ?u]
+           [?e :user/password ?pw]]
+         @c username)))
+
+(defn put-item!
+  "Create or update an item owned by owner."
+  [owner {:keys [id title]}]
+  (when-let [c @conn]
+    (let [item-id (if (str/blank? id)
+                    (str (random-uuid))
+                    id)
+          created-at (str (t/instant))]
+      (d/transact c [{:item/id item-id
+                      :item/owner owner
+                      :item/title title
+                      :item/created-at created-at}])
+      {:id item-id
+       :owner owner
+       :title title
+       :created-at created-at})))
+
+(defn list-items
+  "Return all items owned by owner, sorted by creation time."
+  [owner]
+  (if-let [c @conn]
+    (let [rows (d/q '[:find ?id ?title ?created
+                      :in $ ?owner
+                      :where [?e :item/owner ?owner]
+                      [?e :item/id ?id]
+                      [?e :item/title ?title]
+                      [?e :item/created-at ?created]]
+                    @c owner)]
+      (->> rows
+           (map (fn [[id title created]]
+                  {:id id
+                   :title title
+                   :created-at created}))
+           (sort-by :created-at)
+           (vec)))
+    []))
+
+(defn delete-item!
+  "Delete an item if owned by owner. Returns true if deleted."
+  [owner id]
+  (when-let [c @conn]
+    (when-let [eid (d/q '[:find ?e .
+                          :in $ ?owner ?id
+                          :where [?e :item/id ?id]
+                          [?e :item/owner ?owner]]
+                        @c owner id)]
+      (d/transact c [[:db.fn/retractEntity eid]])
+      true)))
+
+(defn storage-summary
+  "Return counts of registered users and stored items."
+  []
+  (if-let [c @conn]
+    (let [db @c
+          users (count (d/q '[:find ?u :where [?u :user/username]] db))
+          items (count (d/q '[:find ?i :where [?i :item/id]] db))]
+      {:users users :items items})
+    {:users 0 :items 0}))
+
+(defn all-data
+  "Return all users and items in the database as EDN data."
+  []
+  (if-let [c @conn]
+    (let [db @c
+          users (mapv (fn [[u pw]]
+                        {:username u :password pw})
+                      (d/q '[:find ?u ?pw
+                             :where [?e :user/username ?u]
+                             [?e :user/password ?pw]]
+                           db))
+          items (mapv (fn [[id owner title created]]
+                        {:id id
+                         :owner owner
+                         :title title
+                         :created-at created})
+                      (d/q '[:find ?id ?owner ?title ?created
+                             :where [?e :item/id ?id]
+                             [?e :item/owner ?owner]
+                             [?e :item/title ?title]
+                             [?e :item/created-at ?created]]
+                           db))]
+      {:users users :items items})
+    {:users [] :items []}))
+
+(defn dump-db!
+  "Dump database contents to an EDN file, OutputStream, or stdout."
+  ([]
+   (dump-db! *out*))
+  ([target]
+   (let [content (pr-str (all-data))]
+     (if (string? target)
+       (spit target content)
+       (binding [*out* target]
+         (println content))))))
+
+(defn load-db!
+  "Load database contents from an EDN file, string, or stream."
+  [source]
+  (let [raw (if (string? source)
+              (let [f (io/file source)]
+                (if (.exists f)
+                  (slurp f)
+                  source))
+              (slurp source))
+        parsed (edn/read-string raw)]
+    (when (and (map? parsed) @conn)
+      (let [users (mapv (fn [{:keys [username password]}]
+                          {:user/username username
+                           :user/password password})
+                        (:users parsed))
+            items (mapv (fn [{:keys [id owner title created-at]}]
+                          {:item/id id
+                           :item/owner owner
+                           :item/title title
+                           :item/created-at created-at})
+                        (:items parsed))
+            tx (into users items)]
+        (when (seq tx)
+          (d/transact @conn tx))))))

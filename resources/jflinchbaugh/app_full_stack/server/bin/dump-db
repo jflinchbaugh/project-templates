@@ -1,0 +1,10 @@
+#!/bin/sh
+set -e
+
+TARGET="${1:-${DATAHIKE_PATH:-/var/lib/datahike/{{artifact/id}}.sqlite}}"
+
+exec java \
+    --add-opens=java.base/java.nio=ALL-UNNAMED \
+    --enable-native-access=ALL-UNNAMED \
+    -server -Xms64m -Xmx256m \
+    -jar /app/app.jar dump "${TARGET}"

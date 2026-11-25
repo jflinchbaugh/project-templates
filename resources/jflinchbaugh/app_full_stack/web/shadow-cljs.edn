@@ -1,0 +1,36 @@
+;; shadow-cljs configuration for {{raw-name}} web
+{:source-paths
+ ["src/main"
+  "src/test"]
+ :dependencies
+ [[lilactown/helix "0.3.0"]
+  [com.taoensso/telemere "1.4.0"]
+  [tick/tick "1.0.3"]
+  [cljs-http "0.1.49"]
+  [binaryage/devtools "1.0.7"]
+  [cider/cider-nrepl "0.64.1"]
+  [refactor-nrepl "3.16.0"]]
+ :dev-http
+ {3000
+  {:root "public"
+   :proxy-url "http://localhost:6000/"
+   :proxy-predicate
+   {{top/ns}}.{{main/ns}}.build-hooks/proxy-api?}}
+ :builds
+ {:frontend
+  {:target :browser
+   :output-dir "public/js"
+   :asset-path "js"
+   :modules
+   {:main {:init-fn {{top/ns}}.{{main/ns}}.app/init}}
+   :build-hooks
+   [[{{top/ns}}.{{main/ns}}.build-hooks/version-cljs]
+    [{{top/ns}}.{{main/ns}}.build-hooks/version-index-resources]]}
+
+  :test
+  {:target :node-test
+   :main node/main
+   :output-to "out/node-tests.js"
+   :autorun true
+   :build-hooks
+   [[{{top/ns}}.{{main/ns}}.build-hooks/version-cljs]]}}}

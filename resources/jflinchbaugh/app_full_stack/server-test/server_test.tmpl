@@ -1,0 +1,80 @@
+(ns {{top/ns}}.{{main/ns}}.server-test
+  (:require [clojure.data.json :as json]
+            [ring.mock.request :as mock]
+            [{{test-runner/namespace}} :as t]
+            [{{top/ns}}.{{main/ns}}.db :as db]
+            [{{top/ns}}.{{main/ns}}.server :as sut])
+  (:import [java.util Base64]))
+
+(defn- reset-db-fixture
+  [f]
+  (db/delete-db! ":memory")
+  (db/connect! ":memory")
+  (try
+    (f)
+    (finally
+      (db/delete-db! ":memory"))))
+
+(t/use-fixtures :each reset-db-fixture)
+
+(defn- basic-auth-header
+  [username password]
+  (let [raw (str username ":" password)
+        encoded (.encodeToString (Base64/getEncoder)
+                                 (.getBytes raw "UTF-8"))]
+    (str "Basic " encoded)))
+
+(t/{{test-runner/deftest}} ping-and-health-test
+  (t/{{test-runner/testing}} "GET /api/ping returns pong"
+    (let [resp (sut/app (mock/request :get "/api/ping"))]
+      (t/{{test-runner/is}} (= 200 (:status resp)))
+      (t/{{test-runner/is}} (= "pong" (:body resp)))))
+  (t/{{test-runner/testing}} "GET /api/health returns ok JSON"
+    (let [resp (sut/app (mock/request :get "/api/health"))
+          body (json/read-str (:body resp) :key-fn keyword)]
+      (t/{{test-runner/is}} (= 200 (:status resp)))
+      (t/{{test-runner/is}} (= {:status "ok"} body))))
+  (t/{{test-runner/testing}} "GET /api/missing returns 404"
+    (let [resp (sut/app (mock/request :get "/api/missing"))]
+      (t/{{test-runner/is}} (= 404 (:status resp))))))
+
+(t/{{test-runner/deftest}} auth-and-items-test
+  (t/{{test-runner/testing}} "Registration validates required fields"
+    (let [req (-> (mock/request :post "/api/register")
+                  (mock/json-body {:username "" :password "secret"}))
+          resp (sut/app req)]
+      (t/{{test-runner/is}} (= 400 (:status resp)))))
+  (t/{{test-runner/testing}} "Registration, duplicate 409, and Basic Auth"
+    (let [make-reg (fn []
+                     (-> (mock/request :post "/api/register")
+                         (mock/json-body {:username "alice"
+                                          :password "secret"})))
+          reg-resp (sut/app (make-reg))
+          dup-resp (sut/app (make-reg))
+          unauth (sut/app (mock/request :get "/api/items"))
+          bad-auth (sut/app
+                    (-> (mock/request :get "/api/items")
+                        (mock/header "authorization"
+                                     (basic-auth-header "alice" "bad"))))
+          ok-hdr (basic-auth-header "alice" "secret")
+          create-resp (sut/app
+                       (-> (mock/request :post "/api/items")
+                           (mock/header "authorization" ok-hdr)
+                           (mock/json-body {:id "item-1"
+                                            :title "Hello"})))
+          list-resp (sut/app
+                     (-> (mock/request :get "/api/items")
+                         (mock/header "authorization" ok-hdr)))
+          list-body (json/read-str (:body list-resp) :key-fn keyword)
+          del-resp (sut/app
+                    (-> (mock/request :delete "/api/items/item-1")
+                        (mock/header "authorization" ok-hdr)))]
+      (t/{{test-runner/is}} (= 201 (:status reg-resp)))
+      (t/{{test-runner/is}} (= 409 (:status dup-resp)))
+      (t/{{test-runner/is}} (= 401 (:status unauth)))
+      (t/{{test-runner/is}} (= 401 (:status bad-auth)))
+      (t/{{test-runner/is}} (= 201 (:status create-resp)))
+      (t/{{test-runner/is}} (= 200 (:status list-resp)))
+      (t/{{test-runner/is}} (= "Hello"
+                               (-> list-body :items first :title)))
+      (t/{{test-runner/is}} (= 200 (:status del-resp))))))
