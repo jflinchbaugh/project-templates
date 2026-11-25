@@ -1,0 +1,14 @@
+{:description "FIXME: my new Clay data analysis project."
+ :data-fn     [org.corfield.new.transformers/choose-test-runner]
+ :transform
+ [["build" ""
+   {"build.tmpl" "build.clj"
+    "deps.tmpl"  "deps.edn"}]
+  ["dev" "dev"
+   {"user.tmpl" "user.clj"}]
+  ["notebooks" "notebooks"
+   {"sample.tmpl" "sample.clj"}]
+  ["src" "src/{{top/file}}"
+   {"main.tmpl" "{{main/file}}.clj"}]
+  ["test" "test/{{top/file}}"
+   {"main_test.tmpl" "{{main/file}}_test.clj"}]]}

@@ -1,0 +1,6 @@
+{:base-source-path "notebooks"
+ :source-path ["sample.clj"]
+ :base-target-path "docs"
+ :format [:html]
+ :show true
+ :browse true}

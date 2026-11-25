@@ -19,6 +19,7 @@ Templates:
   app              Test jflinchbaugh/app
   app-web-server   Test jflinchbaugh/app-web-server
   app-full-stack   Test jflinchbaugh/app-full-stack
+  clay-repl        Test jflinchbaugh/clay-repl
   (defaults to running all templates when omitted)
 
 Options:
@@ -52,7 +53,7 @@ while [[ $# -gt 0 ]]; do
       usage >&2
       exit 1
       ;;
-    app|app-web-server|app-full-stack)
+    app|app-web-server|app-full-stack|clay-repl)
       TEMPLATES+=("$1")
       shift
       ;;
@@ -65,7 +66,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 if [[ ${#TEMPLATES[@]} -eq 0 ]]; then
-  TEMPLATES=("app" "app-web-server" "app-full-stack")
+  TEMPLATES=("app" "app-web-server" "app-full-stack" "clay-repl")
 fi
 
 WORK_DIR="$(mktemp -d)"
@@ -271,6 +272,42 @@ test_app_full_stack() {
   fi
 }
 
+test_clay_repl() {
+  local dir="$WORK_DIR/demo-clay"
+  echo "=== Testing jflinchbaugh/clay-repl ==="
+  create_project "jflinchbaugh/clay-repl" "acme/demo-clay" "$dir"
+
+  (
+    cd "$dir"
+    echo "--- Running clojure -T:build test ---"
+    clojure -T:build test
+
+    echo "--- Running clojure -T:build render ---"
+    clojure -T:build render
+    if [[ ! -f "docs/sample.html" ]]; then
+      echo "ERROR: expected docs/sample.html" >&2
+      exit 1
+    fi
+    grep -q "Sample Analysis" docs/sample.html
+    grep -q "24000" docs/sample.html
+    grep -q "45000" docs/sample.html
+    echo "Clay render verified: docs/sample.html"
+
+    if [[ "$RUN_CI" == true ]]; then
+      echo "--- Verifying clean and re-render ---"
+      clojure -T:build clean
+      if [[ -e "docs" ]]; then
+        echo "ERROR: expected clojure -T:build clean to remove docs/" >&2
+        exit 1
+      fi
+      clojure -T:build render
+      test -f docs/sample.html
+    fi
+
+    run_outdated_if_enabled
+  )
+}
+
 echo "=== Running project-templates test suite ==="
 (
   cd "$REPO_ROOT"
@@ -287,6 +324,9 @@ for tmpl in "${TEMPLATES[@]}"; do
       ;;
     app-full-stack)
       test_app_full_stack
+      ;;
+    clay-repl)
+      test_clay_repl
       ;;
   esac
 done

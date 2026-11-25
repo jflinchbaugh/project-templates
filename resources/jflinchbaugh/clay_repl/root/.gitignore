@@ -1,0 +1,14 @@
+.calva/
+.clj-kondo/.cache
+.cpcache/
+.lsp/.cache
+.lsp/sqlite.db
+.nrepl-history
+.nrepl-port
+.vscode/
+*.class
+*.jar
+*.swp
+*~
+/docs/
+/target/

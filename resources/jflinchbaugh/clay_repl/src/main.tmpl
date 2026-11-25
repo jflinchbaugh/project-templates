@@ -1,0 +1,49 @@
+(ns {{top/ns}}.{{main/ns}}
+  (:require [clojure.data.csv :as csv]
+            [clojure.data.json :as json]
+            [clojure.data.priority-map :refer [priority-map]]
+            [clojure.java.io :as io]
+            [clojure.math.combinatorics :as combo]
+            [clojure.string :as str]
+            [org.httpkit.client :as http]
+            [taoensso.telemere :as tel]
+            [taoensso.telemere.tools-logging :as tel-tl]
+            [tick.core :as t]))
+
+(tel-tl/tools-logging->telemere!)
+
+(defn read-resource
+  "Read a classpath resource as a string, throwing if missing."
+  [path]
+  (if-let [res (io/resource path)]
+    (slurp res)
+    (throw (ex-info (str "Missing resource: " path) {:path path}))))
+
+(defn read-lines
+  "Split text into lines, returning [] for blank input."
+  [text]
+  (if (str/blank? text)
+    []
+    (str/split-lines (str/trim-newline text))))
+
+(defn split-blocks
+  "Split text into blocks separated by blank lines."
+  [text]
+  (if (str/blank? text)
+    []
+    (str/split (str/trim text) #"\r?\n\r?\n")))
+
+(defn parse-longs
+  "Extract all signed integers from text as a vector of longs."
+  [text]
+  (mapv parse-long (re-seq #"-?\d+" (or text ""))))
+
+(defn manhattan
+  "Return the Manhattan distance between two [x y] coordinates."
+  [[x1 y1] [x2 y2]]
+  (+ (abs (- x1 x2)) (abs (- y1 y2))))
+
+(defn neighbors-4
+  "Return the 4 orthogonal neighbor coordinates around [x y]."
+  [[x y]]
+  [[(dec x) y] [(inc x) y] [x (dec y)] [x (inc y)]])

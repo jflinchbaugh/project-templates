@@ -1,0 +1,49 @@
+(ns user
+  (:require [scicloj.clay.v2.api :as clay]
+            [taoensso.telemere :as tel]
+            [taoensso.telemere.tools-logging :as tel-tl]))
+
+(tel/add-handler!
+ :default/console
+ (tel/handler:console {:stream :err}))
+
+(tel-tl/tools-logging->telemere!)
+
+(defn start!
+  "Start the Clay live preview server."
+  []
+  (clay/start!))
+
+(defn stop!
+  "Stop the Clay live preview server."
+  []
+  (clay/stop!))
+
+(defn browse!
+  "Open the Clay preview in the default browser."
+  []
+  (clay/browse!))
+
+(defn make!
+  "Render notebooks using clay.edn or optional overrides."
+  ([]
+   (clay/make!))
+  ([opts]
+   (clay/make! opts)))
+
+(defn show!
+  "Render a single notebook path relative to :base-source-path."
+  [path]
+  (clay/make! {:source-path [path]}))
+
+(comment
+  (start!)
+
+  (show! "sample.clj")
+
+  (make!)
+
+  (browse!)
+
+  (stop!)
+  )

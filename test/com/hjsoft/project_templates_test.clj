@@ -59,7 +59,20 @@
                      "web/src/main/acme/demo_fullstack/ui.cljs"
                      "web/src/test/node.cljs"
                      "web/src/test/acme/demo_fullstack/core_test.cljs"
-                     "web/src/test/acme/demo_fullstack/ui_test.cljs"]}])
+                     "web/src/test/acme/demo_fullstack/ui_test.cljs"]}
+   {:template 'jflinchbaugh/clay-repl
+    :resource "jflinchbaugh/clay_repl/template.edn"
+    :name 'acme/demo-clay
+    :dir "demo_clay"
+    :expected-files ["deps.edn"
+                     "build.clj"
+                     "clay.edn"
+                     "README.md"
+                     "resources/sample.txt"
+                     "dev/user.clj"
+                     "notebooks/sample.clj"
+                     "src/acme/demo_clay.clj"
+                     "test/acme/demo_clay_test.clj"]}])
 
 (defn- delete-recursively
   "Delete a directory tree rooted at f."

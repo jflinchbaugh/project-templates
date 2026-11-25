@@ -1,0 +1,32 @@
+(ns {{top/ns}}.{{main/ns}}-test
+  (:require [sample :as sample]
+            [taoensso.telemere :as tel]
+            [{{test-runner/namespace}} :as t]
+            [{{top/ns}}.{{main/ns}} :as sut]))
+
+(t/{{test-runner/deftest}} helpers-test
+  (t/{{test-runner/testing}} "line, block, and integer parsing helpers"
+    (t/{{test-runner/is}} (= [] (sut/read-lines "")))
+    (t/{{test-runner/is}} (= ["a" "b"] (sut/read-lines "a\nb\n")))
+    (t/{{test-runner/is}} (= ["1\n2" "3"]
+                             (sut/split-blocks "1\n2\n\n3\n")))
+    (t/{{test-runner/is}} (= [10 -3 42]
+                             (sut/parse-longs "x=10, y=-3, z=42"))))
+  (t/{{test-runner/testing}} "grid helpers"
+    (t/{{test-runner/is}} (= 6 (sut/manhattan [1 2] [4 -1])))
+    (t/{{test-runner/is}} (= #{[0 1] [2 1] [1 0] [1 2]}
+                             (set (sut/neighbors-4 [1 1]))))))
+
+(t/{{test-runner/deftest}} sample-test
+  (t/{{test-runner/testing}} "Sample notebook summary calculations"
+    (let [input (sut/read-resource "sample.txt")]
+      (t/{{test-runner/is}} (= 24000 (sample/max-group-total input)))
+      (t/{{test-runner/is}} (= 45000 (sample/top-3-total input))))))
+
+(t/{{test-runner/deftest}} logging-interop-test
+  (t/{{test-runner/testing}} "SLF4J and tools.logging route to Telemere"
+    (let [interop (tel/check-interop)]
+      (t/{{test-runner/is}}
+       (true? (get-in interop [:slf4j :telemere-receiving?])))
+      (t/{{test-runner/is}}
+       (true? (get-in interop [:tools-logging :telemere-receiving?]))))))

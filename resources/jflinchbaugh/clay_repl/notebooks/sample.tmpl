@@ -1,0 +1,72 @@
+(ns sample
+  (:require [scicloj.kindly.v4.kind :as kind]
+            [scicloj.tableplot.v1.plotly :as plotly]
+            [tablecloth.api :as tc]
+            [{{top/ns}}.{{main/ns}} :as util]))
+
+;; # Sample Analysis
+;;
+;; This starter notebook demonstrates a data analysis workflow
+;; with Clay, Kindly, Tablecloth, and Tableplot.
+
+;; ## Input Parsing
+;;
+;; Load sample data from `resources/sample.txt` and split it
+;; into integer groups separated by blank lines.
+
+(def sample-input
+  (util/read-resource "sample.txt"))
+
+(defn parse-groups
+  "Parse blank-line-delimited groups of integers."
+  [text]
+  (mapv util/parse-longs (util/split-blocks text)))
+
+(defn group-totals
+  "Sum each integer group."
+  [groups]
+  (mapv (fn [g] (reduce + 0 g)) groups))
+
+;; ## Summary Metrics
+
+(defn max-group-total
+  "Return the maximum group total."
+  [text]
+  (apply max (group-totals (parse-groups text))))
+
+(defn top-3-total
+  "Return the sum of the top 3 group totals."
+  [text]
+  (->> (parse-groups text)
+       (group-totals)
+       (sort >)
+       (take 3)
+       (reduce + 0)))
+
+(kind/table
+ {:column-names ["Metric" "Value"]
+  :row-vectors [["Max group total" (max-group-total sample-input)]
+                ["Top 3 groups total" (top-3-total sample-input)]]})
+
+;; ## Data Analysis & Visualization
+
+(def summary-ds
+  (let [groups (parse-groups sample-input)]
+    (tc/dataset
+     {:group (mapv (fn [idx] (str "Group " (inc idx)))
+                   (range (count groups)))
+      :items (mapv count groups)
+      :total (group-totals groups)})))
+
+summary-ds
+
+(-> summary-ds
+    (plotly/base {:=x :group
+                  :=y :total
+                  :=title "Totals by Group"})
+    (plotly/layer-bar))
+
+(kind/hiccup
+ [:div
+  [:h3 "Summary"]
+  [:p (str "Groups analyzed: " (tc/row-count summary-ds))]])

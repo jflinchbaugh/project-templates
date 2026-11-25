@@ -7,11 +7,11 @@ My collection of project templates for use with:
 ## Usage
 
 This is a template project for use with [deps-new](https://github.com/seancorfield/deps-new).
-As originally generated, it will produce a new library project when run:
+As originally generated, it will produce a new app project when run:
 
 $ clojure -Sdeps '{:deps {com.hjsoft/project-templates {:local/root "."}}}' -Tnew create :template jflinchbaugh/app :name myusername/mycoolapp
 
-Or with the repo alredy added to th ealias:
+Or with the repo alredy added to the alias:
 $ clojure -T:project/create :template jflinchbaugh/app :name myusername/mycoolapp
 
 For a web server application (`jflinchbaugh/app-web-server`):
@@ -23,6 +23,11 @@ For a full-stack web + server application (`jflinchbaugh/app-full-stack`):
 
 $ clojure -Sdeps '{:deps {com.hjsoft/project-templates {:local/root "."}}}' -Tnew create :template jflinchbaugh/app-full-stack :name myusername/myfullstackapp
 $ clojure -T:project/create :template jflinchbaugh/app-full-stack :name myusername/myfullstackapp
+
+For a Clay + Noj + REPL data analysis project (`jflinchbaugh/clay-repl`):
+
+$ clojure -Sdeps '{:deps {com.hjsoft/project-templates {:local/root "."}}}' -Tnew create :template jflinchbaugh/clay-repl :name myusername/myanalysis
+$ clojure -T:project/create :template jflinchbaugh/clay-repl :name myusername/myanalysis
 
 ## Testing
 
@@ -40,6 +45,7 @@ $ ./scripts/test-templates.sh
 $ ./scripts/test-templates.sh app
 $ ./scripts/test-templates.sh app-web-server
 $ ./scripts/test-templates.sh app-full-stack
+$ ./scripts/test-templates.sh clay-repl
 
 Useful flags:
 - `--ci`: also run release/uberjar builds (`clojure -T:build ci` on `app-web-server`, `make build` on `app-full-stack`)
@@ -50,6 +56,7 @@ Examples:
 
 $ ./scripts/test-templates.sh --ci app-web-server
 $ ./scripts/test-templates.sh --ci app-full-stack
+$ ./scripts/test-templates.sh --ci clay-repl
 $ ./scripts/test-templates.sh --keep app-full-stack
 $ ./scripts/test-templates.sh --outdated app-full-stack
 

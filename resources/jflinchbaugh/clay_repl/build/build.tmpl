@@ -1,0 +1,32 @@
+(ns build
+  (:refer-clojure :exclude [clean test])
+  (:require [clojure.tools.build.api :as b]))
+
+(defn test "Run all the tests." [opts]
+  (let [basis (b/create-basis {:aliases [:test]})
+        cmds (b/java-command
+              {:basis basis
+               :main 'clojure.main
+               :main-args (into ["-m" "{{test-runner/main}}"]
+                            (mapcat (fn [[k v]] [(str k) (str v)]) opts))})
+        {:keys [exit]} (b/process cmds)]
+    (when-not (zero? exit) (throw (ex-info "Tests failed" {}))))
+  opts)
+
+(defn render "Render Clay notebooks to docs/." [opts]
+  (let [basis (b/create-basis {})
+        expr (str "(require '[scicloj.clay.v2.api :as clay]) "
+                  "(clay/make! {:show false :browse false}) "
+                  "(System/exit 0)")
+        cmds (b/java-command
+              {:basis basis
+               :main 'clojure.main
+               :main-args ["-e" expr]})
+        {:keys [exit]} (b/process cmds)]
+    (when-not (zero? exit) (throw (ex-info "Clay render failed" {}))))
+  opts)
+
+(defn clean "Delete build and rendered artifacts." [opts]
+  (b/delete {:path "target"})
+  (b/delete {:path "docs"})
+  opts)
