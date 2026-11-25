@@ -71,8 +71,8 @@
                      "resources/sample.txt"
                      "dev/user.clj"
                      "notebooks/sample.clj"
-                     "src/acme/demo_clay.clj"
-                     "test/acme/demo_clay_test.clj"]}])
+                     "src/demo_clay/core.clj"
+                     "test/demo_clay/core_test.clj"]}])
 
 (defn- delete-recursively
   "Delete a directory tree rooted at f."

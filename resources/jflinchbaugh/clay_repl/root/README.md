@@ -51,9 +51,9 @@ clojure -T:build test
 ## Project Layout
 
 - Put data files in `resources/` (for example `resources/sample.txt`).
-- Put shared helpers in `src/{{top/file}}/{{main/file}}.clj`.
+- Put shared helpers in `src/{{main/file}}/core.clj`.
 - Add analysis notebooks in `notebooks/` (for example `notebooks/sample.clj`) and update `clay.edn` or call `(show! "sample.clj")`.
-- Add unit tests in `test/{{top/file}}/{{main/file}}_test.clj`.
+- Add unit tests in `test/{{main/file}}/core_test.clj`.
 
 ## License
 
