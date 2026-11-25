@@ -1,6 +1,7 @@
 (ns {{top/ns}}.{{main/ns}}.server-test
   (:require [clojure.data.json :as json]
             [ring.mock.request :as mock]
+            [taoensso.telemere :as tel]
             [{{test-runner/namespace}} :as t]
             [{{top/ns}}.{{main/ns}}.db :as db]
             [{{top/ns}}.{{main/ns}}.server :as sut])
@@ -78,3 +79,15 @@
       (t/{{test-runner/is}} (= "Hello"
                                (-> list-body :items first :title)))
       (t/{{test-runner/is}} (= 200 (:status del-resp))))))
+
+(t/{{test-runner/deftest}} logging-interop-test
+  (t/{{test-runner/testing}} "SLF4J and tools.logging route to Telemere"
+    (let [interop (tel/check-interop)]
+      (t/{{test-runner/is}}
+       (true? (get-in interop [:slf4j :sending->telemere?])))
+      (t/{{test-runner/is}}
+       (true? (get-in interop [:slf4j :telemere-receiving?])))
+      (t/{{test-runner/is}}
+       (true? (get-in interop [:tools-logging :sending->telemere?])))
+      (t/{{test-runner/is}}
+       (true? (get-in interop [:tools-logging :telemere-receiving?]))))))

@@ -42,6 +42,7 @@
                      "server/demo-fullstack-server.yaml"
                      "server/demo-fullstack-server.kube"
                      "server/src/acme/demo_fullstack/db.clj"
+                     "server/src/acme/demo_fullstack/logging.clj"
                      "server/src/acme/demo_fullstack/server.clj"
                      "server/test/acme/demo_fullstack/db_test.clj"
                      "server/test/acme/demo_fullstack/server_test.clj"

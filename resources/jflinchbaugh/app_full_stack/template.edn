@@ -7,8 +7,9 @@
     "pod.yaml.tmpl" "{{artifact/id}}-server.yaml"
     "pod.kube.tmpl" "{{artifact/id}}-server.kube"}]
   ["server-src" "server/src/{{top/file}}/{{main/file}}"
-   {"db.tmpl"     "db.clj"
-    "server.tmpl" "server.clj"}]
+   {"db.tmpl"      "db.clj"
+    "logging.tmpl" "logging.clj"
+    "server.tmpl"  "server.clj"}]
   ["server-test" "server/test/{{top/file}}/{{main/file}}"
    {"db_test.tmpl"     "db_test.clj"
     "server_test.tmpl" "server_test.clj"}]

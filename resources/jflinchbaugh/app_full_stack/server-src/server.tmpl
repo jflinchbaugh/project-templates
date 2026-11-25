@@ -1,6 +1,7 @@
 (ns {{top/ns}}.{{main/ns}}.server
   (:gen-class)
-  (:require [buddy.auth.backends :as backends]
+  (:require [{{top/ns}}.{{main/ns}}.logging]
+            [buddy.auth.backends :as backends]
             [buddy.auth.middleware :as buddy]
             [buddy.hashers :as hashers]
             [clojure.data.json :as json]
@@ -12,10 +13,6 @@
             [ring.util.request :as rur]
             [taoensso.telemere :as tel]
             [{{top/ns}}.{{main/ns}}.db :as db]))
-
-(tel/add-handler!
- :default/console
- (tel/handler:console {:stream :err}))
 
 (def ^:const realm "{{artifact/id}}")
 

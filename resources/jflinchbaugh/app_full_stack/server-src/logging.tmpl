@@ -1,0 +1,9 @@
+(ns {{top/ns}}.{{main/ns}}.logging
+  (:require [taoensso.telemere :as tel]
+            [taoensso.telemere.tools-logging :as tel-tl]))
+
+(tel/add-handler!
+ :default/console
+ (tel/handler:console {:stream :err}))
+
+(tel-tl/tools-logging->telemere!)
