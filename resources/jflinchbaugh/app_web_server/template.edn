@@ -1,0 +1,10 @@
+{:description "FIXME: my new web server application."
+ :data-fn     [org.corfield.new.transformers/choose-test-runner]
+ :transform
+ [["build" ""
+   {"build.tmpl" "build.clj"
+    "deps.tmpl"  "deps.edn"}]
+  ["src" "src/{{top/file}}"
+   {"main.tmpl" "{{main/file}}.clj"}]
+  ["test" "test/{{top/file}}"
+   {"main_test.tmpl" "{{main/file}}_test.clj"}]]}
