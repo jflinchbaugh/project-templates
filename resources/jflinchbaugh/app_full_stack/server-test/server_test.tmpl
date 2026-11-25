@@ -5,7 +5,8 @@
             [{{test-runner/namespace}} :as t]
             [{{top/ns}}.{{main/ns}}.db :as db]
             [{{top/ns}}.{{main/ns}}.server :as sut])
-  (:import [java.util Base64]))
+  (:import [java.util Base64]
+           [org.slf4j LoggerFactory]))
 
 (defn- reset-db-fixture
   [f]
@@ -90,4 +91,8 @@
       (t/{{test-runner/is}}
        (true? (get-in interop [:tools-logging :sending->telemere?])))
       (t/{{test-runner/is}}
-       (true? (get-in interop [:tools-logging :telemere-receiving?]))))))
+       (true? (get-in interop [:tools-logging :telemere-receiving?])))))
+  (t/{{test-runner/testing}} "c3p0/MLog info logging is quieted"
+    (let [logger (LoggerFactory/getLogger "com.mchange.v2.log.MLog")]
+      (t/{{test-runner/is}} (false? (.isInfoEnabled logger)))
+      (t/{{test-runner/is}} (true? (.isWarnEnabled logger))))))

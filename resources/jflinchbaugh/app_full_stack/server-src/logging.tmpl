@@ -7,3 +7,5 @@
  (tel/handler:console {:stream :err}))
 
 (tel-tl/tools-logging->telemere!)
+
+(tel/set-min-level! nil "com.mchange.*" :warn)
