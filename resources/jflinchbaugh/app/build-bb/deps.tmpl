@@ -1,8 +1,8 @@
 {:paths ["src" "resources"]
  :deps {org.clojure/clojure {:mvn/version "1.12.4"}}
  :aliases
- {:run-m {:main-opts ["-m" "{{top/ns}}.{{main/ns}}"]}
-  :run-x {:ns-default {{top/ns}}.{{main/ns}}
+ {:run-m {:main-opts ["-m" "{{base/ns}}.core"]}
+  :run-x {:ns-default {{base/ns}}.core
           :exec-fn greet
           :exec-args {:name "Clojure"}}
   :build {:deps {io.github.clojure/tools.build

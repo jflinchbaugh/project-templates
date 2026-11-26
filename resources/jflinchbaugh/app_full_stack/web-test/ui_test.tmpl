@@ -1,8 +1,8 @@
-(ns {{top/ns}}.{{main/ns}}.ui-test
+(ns {{base/ns}}.ui-test
   (:require [cljs.test :refer [deftest is testing]]
             [helix.core :refer [$]]
             ["jsdom" :refer [JSDOM]]
-            [{{top/ns}}.{{main/ns}}.ui :as ui]))
+            [{{base/ns}}.ui :as ui]))
 
 (defonce ^:private _init-jsdom
   (let [dom (JSDOM. "<!DOCTYPE html><html><body></body></html>"

@@ -4,4 +4,4 @@ out/
 public/js/
 public/index.html
 public/sw.js
-src/main/{{top/file}}/{{main/file}}/version.cljs
+src/main/{{base/file}}/version.cljs

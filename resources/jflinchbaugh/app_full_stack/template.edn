@@ -1,24 +1,25 @@
 {:description "FIXME: my new full-stack application."
- :data-fn     [org.corfield.new.transformers/choose-test-runner]
+ :data-fn     [org.corfield.new.transformers/choose-test-runner
+               com.hjsoft.project-templates/add-base-ns]
  :transform
  [["server" "server"
    {"build.tmpl"    "build.clj"
     "deps.tmpl"     "deps.edn"
     "pod.yaml.tmpl" "{{artifact/id}}-server.yaml"
     "pod.kube.tmpl" "{{artifact/id}}-server.kube"}]
-  ["server-src" "server/src/{{top/file}}/{{main/file}}"
+  ["server-src" "server/src/{{base/file}}"
    {"db.tmpl"      "db.clj"
     "logging.tmpl" "logging.clj"
     "server.tmpl"  "server.clj"}]
-  ["server-test" "server/test/{{top/file}}/{{main/file}}"
+  ["server-test" "server/test/{{base/file}}"
    {"db_test.tmpl"     "db_test.clj"
     "server_test.tmpl" "server_test.clj"}]
   ["web" "web"]
-  ["web-src" "web/src/main/{{top/file}}/{{main/file}}"
+  ["web-src" "web/src/main/{{base/file}}"
    {"app.tmpl"         "app.cljs"
     "build_hooks.tmpl" "build_hooks.clj"
     "core.tmpl"        "core.cljs"
     "ui.tmpl"          "ui.cljs"}]
-  ["web-test" "web/src/test/{{top/file}}/{{main/file}}"
+  ["web-test" "web/src/test/{{base/file}}"
    {"core_test.tmpl" "core_test.cljs"
     "ui_test.tmpl"   "ui_test.cljs"}]]}

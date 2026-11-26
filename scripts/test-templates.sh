@@ -152,7 +152,7 @@ test_app_web_server() {
 
     echo "--- Running live HTTP smoke test on port $port ---"
     clojure -M -e "
-      (require '[acme.demo-web :as app]
+      (require '[acme.demo-web.core :as app]
                '[clojure.string :as str]
                '[org.httpkit.client :as http])
       (app/start {:port $port})

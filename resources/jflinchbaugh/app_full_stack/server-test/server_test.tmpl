@@ -1,10 +1,10 @@
-(ns {{top/ns}}.{{main/ns}}.server-test
+(ns {{base/ns}}.server-test
   (:require [clojure.data.json :as json]
             [ring.mock.request :as mock]
             [taoensso.telemere :as tel]
             [{{test-runner/namespace}} :as t]
-            [{{top/ns}}.{{main/ns}}.db :as db]
-            [{{top/ns}}.{{main/ns}}.server :as sut])
+            [{{base/ns}}.db :as db]
+            [{{base/ns}}.server :as sut])
   (:import [java.util Base64]
            [org.slf4j LoggerFactory]))
 

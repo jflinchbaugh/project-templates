@@ -1,6 +1,6 @@
-(ns {{top/ns}}.{{main/ns}}.server
+(ns {{base/ns}}.server
   (:gen-class)
-  (:require [{{top/ns}}.{{main/ns}}.logging]
+  (:require [{{base/ns}}.logging]
             [buddy.auth.backends :as backends]
             [buddy.auth.middleware :as buddy]
             [buddy.hashers :as hashers]
@@ -12,7 +12,7 @@
             [ring.middleware.defaults :as rmd]
             [ring.util.request :as rur]
             [taoensso.telemere :as tel]
-            [{{top/ns}}.{{main/ns}}.db :as db]))
+            [{{base/ns}}.db :as db]))
 
 (def ^:const realm "{{artifact/id}}")
 

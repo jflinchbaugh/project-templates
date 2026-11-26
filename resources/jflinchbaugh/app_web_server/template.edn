@@ -1,10 +1,11 @@
 {:description "FIXME: my new web server application."
- :data-fn     [org.corfield.new.transformers/choose-test-runner]
+ :data-fn     [org.corfield.new.transformers/choose-test-runner
+               com.hjsoft.project-templates/add-base-ns]
  :transform
  [["build" ""
    {"build.tmpl" "build.clj"
     "deps.tmpl"  "deps.edn"}]
-  ["src" "src/{{top/file}}"
-   {"main.tmpl" "{{main/file}}.clj"}]
-  ["test" "test/{{top/file}}"
-   {"main_test.tmpl" "{{main/file}}_test.clj"}]]}
+  ["src" "src/{{base/file}}"
+   {"core.tmpl" "core.clj"}]
+  ["test" "test/{{base/file}}"
+   {"core_test.tmpl" "core_test.clj"}]]}

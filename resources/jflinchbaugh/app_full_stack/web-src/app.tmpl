@@ -1,10 +1,10 @@
-(ns {{top/ns}}.{{main/ns}}.app
+(ns {{base/ns}}.app
   (:require ["react" :as react]
             ["react-dom/client" :as rdom]
             [helix.core :refer [$]]
             [taoensso.telemere :as tel]
-            [{{top/ns}}.{{main/ns}}.core :as core]
-            [{{top/ns}}.{{main/ns}}.ui :refer [app-root]]))
+            [{{base/ns}}.core :as core]
+            [{{base/ns}}.ui :refer [app-root]]))
 
 (defonce root (rdom/createRoot (js/document.getElementById "root")))
 

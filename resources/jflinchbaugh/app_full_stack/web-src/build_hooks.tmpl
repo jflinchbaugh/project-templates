@@ -1,4 +1,4 @@
-(ns {{top/ns}}.{{main/ns}}.build-hooks
+(ns {{base/ns}}.build-hooks
   (:require [clojure.java.io :as io]
             [clojure.string :as str]))
 
@@ -20,9 +20,9 @@
   {:shadow.build/stage :configure}
   [state]
   (let [ts (str (java.time.Instant/now))
-        content (str "(ns {{top/ns}}.{{main/ns}}.version)\n\n"
+        content (str "(ns {{base/ns}}.version)\n\n"
                      "(def build-date \"" ts "\")\n")
-        out-path (str "src/main/{{top/file}}/{{main/file}}/"
+        out-path (str "src/main/{{base/file}}/"
                       "version.cljs")]
     (io/make-parents out-path)
     (spit out-path content))

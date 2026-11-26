@@ -18,7 +18,7 @@ Run the project, overriding the HTTP port:
 
     $ clojure -X:run-x :port 3000
 
-Run the project directly, via `:main-opts` (`-m {{top/ns}}.{{main/ns}}`):
+Run the project directly, via `:main-opts` (`-m {{base/ns}}.core`):
 
     $ clojure -M:run-m
 

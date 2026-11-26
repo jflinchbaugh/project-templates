@@ -11,7 +11,7 @@ As originally generated, it will produce a new app project when run:
 
 $ clojure -Sdeps '{:deps {com.hjsoft/project-templates {:local/root "."}}}' -Tnew create :template jflinchbaugh/app :name myusername/mycoolapp
 
-Or with the repo alredy added to the alias:
+Or with the repo already added to the alias:
 $ clojure -T:project/create :template jflinchbaugh/app :name myusername/mycoolapp
 
 For a web server application (`jflinchbaugh/app-web-server`):
@@ -28,6 +28,36 @@ For a Clay + Noj + REPL data analysis project (`jflinchbaugh/clay-repl`):
 
 $ clojure -Sdeps '{:deps {com.hjsoft/project-templates {:local/root "."}}}' -Tnew create :template jflinchbaugh/clay-repl :name myusername/myanalysis
 $ clojure -T:project/create :template jflinchbaugh/clay-repl :name myusername/myanalysis
+
+Or with a single-word `:name` (which creates `./mycoolapp/` and `mycoolapp.*` namespaces without duplicating `mycoolapp.mycoolapp`):
+
+$ clojure -T:project/create :template jflinchbaugh/app :name mycoolapp
+
+## Naming, Directories, and Namespaces
+
+`deps-new` treats `:name` as a project coordinate (`qualifier/project-name` or a single-word `project-name`), not a full Clojure namespace. All templates in this repo derive a consistent root namespace prefix and place namespaces in directories underneath it.
+
+### Where the project resides
+
+- By default, the project is created in `./<project-leaf>/` inside the current working directory — the part after `/` (or the final segment if `:name` has multiple `/` or `.` segments, so `com.hjsoft/my-app`, `hjsoft/com/full/my-app`, and `com.hjsoft.my-app` all default to `./my-app/`).
+- Pass `:target-dir '"/path/to/dir"'` to place the project in a different directory.
+- Hyphens in the project name stay hyphens in the project directory name and Clojure namespaces (e.g., `my-app/core.clj` -> `my-app.core`), and become underscores in source/test directory paths (`my_app/core.clj`).
+
+### How `:name` maps to the root namespace
+
+- **Qualified name** (`com.hjsoft/my-app`, `acme/my-app`): uses `<qualifier>.<project-name>` (e.g., `com.hjsoft.my-app`, `acme.my-app`).
+  - Note: `deps-new` strips common hosting prefixes like `io.github.` from the qualifier, so `io.github.jflinchbaugh/my-app` becomes `jflinchbaugh.my-app`.
+- **Single-word name** (`my-app`): deduplicates `deps-new`'s default `<name>/<name>` so the root namespace is just `my-app` (never `my-app.my-app`).
+- **Multi-segment slash or dotted name** (`hjsoft/com/full/stack`, `com.hjsoft.full/stack`, or `com.hjsoft.full.stack`): uses all segments as the root namespace (`hjsoft.com.full.stack` / `com.hjsoft.full.stack`) and uses the final segment (`stack`) as the default directory (`./stack/`) and artifact ID.
+
+### Namespace and directory layout by template
+
+| Template | `:name com.hjsoft/my-app` | `:name my-app` | Project dir |
+|---|---|---|---|
+| `jflinchbaugh/app` | `src/com/hjsoft/my_app/core.clj` (`com.hjsoft.my-app.core`)<br>`test/com/hjsoft/my_app/core_test.clj` (`com.hjsoft.my-app.core-test`) | `src/my_app/core.clj` (`my-app.core`)<br>`test/my_app/core_test.clj` (`my-app.core-test`) | `./my-app/` |
+| `jflinchbaugh/app-web-server` | `src/com/hjsoft/my_app/core.clj` (`com.hjsoft.my-app.core`)<br>`test/com/hjsoft/my_app/core_test.clj` (`com.hjsoft.my-app.core-test`) | `src/my_app/core.clj` (`my-app.core`)<br>`test/my_app/core_test.clj` (`my-app.core-test`) | `./my-app/` |
+| `jflinchbaugh/app-full-stack` | `server/src/com/hjsoft/my_app/{server,db,logging}.clj`<br>`web/src/main/com/hjsoft/my_app/{app,core,ui,build_hooks}.*`<br>(`com.hjsoft.my-app.*`) | `server/src/my_app/{server,db,logging}.clj`<br>`web/src/main/my_app/{app,core,ui,build_hooks}.*`<br>(`my-app.*`) | `./my-app/` |
+| `jflinchbaugh/clay-repl` | `src/com/hjsoft/my_app/core.clj` (`com.hjsoft.my-app.core`)<br>`test/com/hjsoft/my_app/core_test.clj` (`com.hjsoft.my-app.core-test`) | `src/my_app/core.clj` (`my-app.core`)<br>`test/my_app/core_test.clj` (`my-app.core-test`) | `./my-app/` |
 
 ## Testing
 

@@ -1,7 +1,7 @@
 (ns node
   (:require [cljs.test :as test]
-            [{{top/ns}}.{{main/ns}}.core-test]
-            [{{top/ns}}.{{main/ns}}.ui-test]))
+            [{{base/ns}}.core-test]
+            [{{base/ns}}.ui-test]))
 
 (defmethod test/report [:cljs.test/default :end-run-tests] [m]
   (when-not (test/successful? m)

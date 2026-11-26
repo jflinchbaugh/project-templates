@@ -19,4 +19,4 @@ release: install
 
 clean:
 	rm -rf out .shadow-cljs public/js public/index.html \
-		public/sw.js src/main/{{top/file}}/{{main/file}}/version.cljs
+		public/sw.js src/main/{{base/file}}/version.cljs

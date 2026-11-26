@@ -1,26 +1,38 @@
-(ns com.hjsoft.project-templates)
+(ns com.hjsoft.project-templates
+  (:require [clojure.string :as str]))
 
-(defn data-fn
-  "Example data-fn handler.
+(defn add-base-ns
+  "Normalize `:base`, `:artifact/id`, `:group/id`, `:scm/repo`, and
+  default `:target-dir` from `:top`, `:main`, and `:target-dir`.
 
-  Result is merged onto existing options data."
-  [data]
-  ;; returning nil means no changes to options data
-  (println "data-fn returning nil")
-  nil)
+  When `:name` is unqualified (e.g. `my-app`), `deps-new` sets both `:top`
+  and `:main` to the same value; deduplicating avoids `my-app.my-app`.
+  When `:main` contains `/` or `.` (e.g. `hjsoft/com/full/stack` or
+  `com.hjsoft.full.stack`), the final segment (`stack`) is used as the
+  default `:target-dir`, `:artifact/id`, and `:scm/repo`."
+  [{:keys [top main target-dir]}]
+  (let [top-s (some-> top str)
+        main-s (some-> main str)
+        norm (fn [s] (when s (str/replace s "_" "-")))
+        raw-base (if (or (str/blank? top-s)
+                         (= (norm top-s) (norm main-s)))
+                   main-s
+                   (str top-s "." main-s))
+        base (when raw-base (str/replace raw-base "/" "."))
+        segments (when base (str/split base #"\."))
+        leaf (when (seq segments) (peek segments))
+        prefix (when (> (count segments) 1)
+                 (str/join "." (pop segments)))
+        multi-main? (and main-s (boolean (re-find #"[/.]" main-s)))]
+    (cond-> {:base base}
+      (and multi-main? leaf)
+      (assoc :artifact/id leaf
+             :scm/repo leaf)
 
-(defn template-fn
-  "Example template-fn handler.
+      (and multi-main? prefix)
+      (assoc :group/id (if (str/includes? prefix ".")
+                         prefix
+                         (str "net.clojars." prefix)))
 
-  Result is used as the EDN for the template."
-  [edn data]
-  ;; must return the whole EDN hash map
-  (println "template-fn returning edn")
-  edn)
-
-(defn post-process-fn
-  "Example post-process-fn handler.
-
-  Can programmatically modify files in the generated project."
-  [edn data]
-  (println "post-process-fn not modifying" (:target-dir data)))
+      (and multi-main? leaf (= target-dir main-s))
+      (assoc :target-dir leaf))))
